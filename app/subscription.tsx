@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ScrollView,
   StyleSheet,
@@ -9,10 +9,11 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import Purchases, {
+import {
   PurchasesOfferings,
   PurchasesPackage,
 } from "react-native-purchases";
+import { getOfferings as getRevenueCatOfferings, purchasePackage, refreshOfferings } from "../config/revenuecat";
 
 const SubscriptionPlan = ({
   title,
@@ -66,14 +67,16 @@ const SubscriptionPlan = ({
 
 export default function SubscriptionScreen() {
   const [offerings, setOfferings] = useState<PurchasesOfferings | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    getOfferings();
+    loadOfferings();
   }, []);
 
   const handleSubscribe = async (pkg: PurchasesPackage) => {
     try {
-      const { customerInfo } = await Purchases.purchasePackage(pkg);
+      const customerInfo = await purchasePackage(pkg);
       if (
         typeof customerInfo.entitlements.active["Premium Cats"] !== "undefined"
       ) {
@@ -84,15 +87,38 @@ export default function SubscriptionScreen() {
     }
   };
 
-  async function getOfferings() {
-    const offerings = await Purchases.getOfferings();
-    if (
-      offerings.current !== null &&
-      offerings.current.availablePackages.length !== 0
-    ) {
+  // Función para obtener todos los paquetes de todas las ofertas
+  const getAllPackages = (offerings: PurchasesOfferings) => {
+    const allPackages: PurchasesPackage[] = [];
+    
+    // Recorrer todas las ofertas disponibles
+    Object.values(offerings.all).forEach(offering => {
+      if (offering.availablePackages) {
+        allPackages.push(...offering.availablePackages);
+      }
+    });
+    
+    return allPackages;
+  };
+
+  async function loadOfferings(forceRefresh = false) {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Usar refreshOfferings si se fuerza la actualización
+      const offerings = forceRefresh 
+        ? await refreshOfferings()
+        : await getRevenueCatOfferings();
+      
+      // Usar las ofertas reales que vienen de RevenueCat
       setOfferings(offerings);
+    } catch (error) {
+      console.log("📢 Error getting offerings:", error);
+      setError("Error loading subscription plans. Please try again.");
+    } finally {
+      setLoading(false);
     }
-    console.log("📢 offerings", JSON.stringify(offerings, null, 2));
   }
 
   return (
@@ -138,21 +164,56 @@ export default function SubscriptionScreen() {
         </View>
 
         <View style={styles.plansContainer}>
-          {offerings?.current?.availablePackages.map((pkg) => (
-            <SubscriptionPlan
-              key={pkg.identifier}
-              title={pkg.product.title}
-              price={pkg.product.priceString}
-              period={pkg.packageType.toLowerCase()}
-              features={[
-                "Unlock all cats",
-                "Remove blur effect",
-                "Monthly new cats",
-                "Basic support",
-              ]}
-              onPress={() => handleSubscribe(pkg)}
-            />
-          ))}
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <Text style={styles.loadingText}>Loading subscription plans...</Text>
+            </View>
+          ) : error ? (
+            <View style={styles.errorContainer}>
+              <Text style={styles.errorText}>{error}</Text>
+              <TouchableOpacity onPress={loadOfferings} style={styles.retryButton}>
+                <Text style={styles.retryButtonText}>Retry</Text>
+              </TouchableOpacity>
+            </View>
+          ) : offerings && getAllPackages(offerings).length ? (
+            <>
+              {/* Mostrar si está en modo Preview */}
+              {offerings.current?.identifier === "preview-offering" && (
+                <View style={styles.previewWarning}>
+                  <Text style={styles.previewWarningText}>
+                    ⚠️ Modo Preview - Usando ofertas de prueba
+                  </Text>
+                  <TouchableOpacity onPress={() => loadOfferings(true)} style={styles.refreshButton}>
+                    <Text style={styles.refreshButtonText}>Refresh Real Offers</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+              
+              {getAllPackages(offerings).map((pkg, index) => (
+                <SubscriptionPlan
+                  key={`${pkg.offeringIdentifier}-${pkg.identifier}`}
+                  title={`${pkg.offeringIdentifier.charAt(0).toUpperCase() + pkg.offeringIdentifier.slice(1)} Plan`}
+                  price={pkg.product.priceString}
+                  period={pkg.packageType.toLowerCase()}
+                  features={[
+                    "Unlock all cats",
+                    "Remove blur effect",
+                    "Monthly new cats",
+                    "Basic support",
+                  ]}
+                  isPopular={pkg.offeringIdentifier === "standar"}
+                  onPress={() => handleSubscribe(pkg)}
+                />
+              ))}
+            </>
+          ) : (
+            <View style={styles.noPlansContainer}>
+              <Text style={styles.noPlansText}>No subscription plans available</Text>
+              <TouchableOpacity onPress={() => loadOfferings(true)} style={styles.refreshButton}>
+                <Text style={styles.refreshButtonText}>Refresh Offers</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
 
         <View style={styles.footer}>
@@ -292,5 +353,69 @@ const styles = StyleSheet.create({
   footerText: {
     fontSize: 12,
     color: "rgba(255, 255, 255, 0.5)",
+  },
+  loadingContainer: {
+    alignItems: "center",
+    paddingVertical: 40,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: "rgba(255, 255, 255, 0.7)",
+  },
+  errorContainer: {
+    alignItems: "center",
+    paddingVertical: 40,
+  },
+  errorText: {
+    fontSize: 16,
+    color: "#e94560",
+    textAlign: "center",
+    marginBottom: 20,
+  },
+  retryButton: {
+    backgroundColor: "#e94560",
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  noPlansContainer: {
+    alignItems: "center",
+    paddingVertical: 40,
+  },
+  noPlansText: {
+    fontSize: 16,
+    color: "rgba(255, 255, 255, 0.7)",
+  },
+  previewWarning: {
+    backgroundColor: "rgba(255, 193, 7, 0.1)",
+    borderColor: "#ffc107",
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 20,
+    alignItems: "center",
+  },
+  previewWarningText: {
+    color: "#ffc107",
+    fontSize: 14,
+    fontWeight: "bold",
+    marginBottom: 12,
+    textAlign: "center",
+  },
+  refreshButton: {
+    backgroundColor: "#ffc107",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  refreshButtonText: {
+    color: "#000",
+    fontSize: 14,
+    fontWeight: "bold",
   },
 });

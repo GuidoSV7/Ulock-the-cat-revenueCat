@@ -1,25 +1,20 @@
 import { Stack } from "expo-router";
 import { useEffect } from "react";
-import { Platform } from "react-native";
-import Purchases from "react-native-purchases";
+import { getCustomerInfo, initializeRevenueCat } from "../config/revenuecat";
 
 export default function RootLayout() {
   useEffect(() => {
-    // Purchases.setLogLevel(LOG_LEVEL.VERBOSE);
-
-    if (Platform.OS === "ios") {
-      Purchases.configure({ apiKey: "appl_EcbMCqjZgXBWAzYBhshcaJHpjOa" });
-    } else if (Platform.OS === "android") {
-      Purchases.configure({ apiKey: "goog_SOhwxVOHyeCjxadVfIrITqTHMrd" });
-    }
-
-    // getCustomerInfo();
+    initializeApp();
   }, []);
 
-  async function getCustomerInfo() {
-    const customerInfo = await Purchases.getCustomerInfo();
-
-    console.log("📢 customerInfo", JSON.stringify(customerInfo, null, 2));
+  async function initializeApp() {
+    // Inicializar RevenueCat
+    const revenueCatInitialized = await initializeRevenueCat();
+    
+    if (revenueCatInitialized) {
+      // Obtener información del cliente
+      await getCustomerInfo();
+    }
   }
 
   return <Stack screenOptions={{ headerShown: false }} />;

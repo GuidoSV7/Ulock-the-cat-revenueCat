@@ -1,54 +1,23 @@
 {
   "expo": {
-    "name": "unlock-the-cat",
-    "slug": "unlock-the-cat",
-    "version": "1.0.0",
-    "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
-    "scheme": "unlockthecat",
-    "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
+    "extra": {
+      "eas": {
+        "projectId": "5fe4255a-7cec-42ea-94a7-009cd5579cc9"
+      }
+    },
+    "android": {
+      "package": "com.guidosv7.unlockthecat"
+    },
     "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.expoproduction.unlockthecat",
+      "bundleIdentifier": "com.guidosv7.unlockthecat",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
     },
-    "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
-      },
-      "edgeToEdgeEnabled": true,
-      "package": "com.expoproduction.unlockthecat"
-    },
-    "web": {
-      "bundler": "metro",
-      "output": "static",
-      "favicon": "./assets/images/favicon.png"
-    },
     "plugins": [
       "expo-router",
-      [
-        "expo-splash-screen",
-        {
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 200,
-          "resizeMode": "contain",
-          "backgroundColor": "#ffffff"
-        }
-      ]
-    ],
-    "experiments": {
-      "typedRoutes": true
-    },
-    "extra": {
-      "router": {},
-      "eas": {
-        "projectId": "5cd44db6-8b53-40db-8fb3-76b0939ee1ee"
-      }
-    },
-    "owner": "expo-production"
+      "expo-font",
+      "expo-web-browser"
+    ]
   }
 }
