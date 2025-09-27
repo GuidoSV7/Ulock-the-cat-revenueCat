@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
 import { Link } from "expo-router";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Dimensions,
   Image,
@@ -117,15 +117,6 @@ export default function Index() {
           </View>
         )}
 
-        {/* Debug toggle - remove in production */}
-        <TouchableOpacity
-          style={styles.debugButton}
-          onPress={() => setIsSubscribed(!isSubscribed)}
-        >
-          <Text style={styles.debugText}>
-            DEBUG: Toggle Subscription ({isSubscribed ? "ON" : "OFF"})
-          </Text>
-        </TouchableOpacity>
       </View>
     </LinearGradient>
   );
@@ -225,17 +216,5 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 18,
     fontWeight: "bold",
-  },
-  debugButton: {
-    position: "absolute",
-    bottom: 50,
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 20,
-  },
-  debugText: {
-    color: "white",
-    fontSize: 12,
   },
 });
